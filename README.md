@@ -9,7 +9,7 @@ Also includes functions for palette and character set manipulation, and the func
 
 Please see example.c for examples.
 
-Works as is with Open Watcom 1.9 and 2.0 32-bit compilers. (C/C++).
+Works as is with Open Watcom 1.9 and 2.0 32-bit compilers (C/C++).
 
 N.B.: The purpose of this project is mostly to educate myself on programming text mode graphics in DOS. Most of the code is mainly optimized (if at all) for speed at the expense of readable code.
 
