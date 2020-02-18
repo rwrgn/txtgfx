@@ -1,5 +1,5 @@
 # txtgfx
-txtgfx.c, txtgfx.h, palettes.h, palettes.cpp
+txtgfx.c, txtgfx.h, palettes.h, palettes.cpp<br/>
 80x25 Text Mode graphics routines for DOS (32-bit protected mode)
 
 v0.002b; February 2020
