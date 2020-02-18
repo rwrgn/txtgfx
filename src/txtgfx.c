@@ -1,7 +1,7 @@
 /**
- * txtgfx.c, txtgfx.h
+ * txtgfx.c, txtgfx.h, palettes.h, palettes.cpp
  * 80x25 Text Mode graphics routines for DOS (32-bit protected mode)
- * v0.002; February 2020
+ * v0.002b; February 2020
  * 
  * Mainly provides functionality to draw graphics primitives with
  * code page 437 block graphics (i.e. characters 219, 220 and 223),
@@ -11,9 +11,12 @@
  * Also includes functions for palette and character set manipulation,
  * and the functionality to load .bin format ANSI graphics files.
  *
+ * Additional palette functions (e.g. saving and loading) declared in
+ * palettes.h and defined in palettes.cpp naturally require C++.
+ *
  * Please see example.c for examples.
  *
- * Works as is with Open Watcom 1.9 and 2.0 32-bit compilers C/C++.
+ * Works as is with Open Watcom 1.9 and 2.0 32-bit compilers (C/C++).
  *
  * N.B.: The purpose of this project is mostly to educate myself on
  * programming text mode graphics in DOS. Most of the code is mainly
@@ -182,6 +185,22 @@ void drawBlocksToBuffer(void) {
 			k = i * 2;
 			screenCharBuffer[i][j] = 223;
 			screenColorBuffer[i][j] = blockColorBuffer[k][j] + 16 * blockColorBuffer[k + 1][j];
+		}
+	}
+}
+
+/**
+ * Piirtää blockBufferin sisällön screenChar- ja -colorBuffereihin
+ * paitsi jos blockBufferin "pikselin" värin arvo on tpcolor.
+ */
+void drawTpBlocksToBuffer(char tpcolor) {
+	int i, j;
+
+	for (i = 0; i < ROWS * 2; i++) {
+		for (j = 0; j < COLS; j++) {
+			if (blockColorBuffer[i][j] != tpcolor){
+				intelligentDrawBlockToScreenBuffer(j,i,blockColorBuffer[i][j]);
+			}
 		}
 	}
 }
@@ -1272,7 +1291,7 @@ void loadAnsiToImageBuffer(char* filename) {
 		fseek(f, 0, SEEK_END);
 		length = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		buffer = malloc(length);
+		buffer = (char*)(malloc(length));
 		if (buffer) {
 			fread(buffer, 1, length, f);
 		}
@@ -1316,6 +1335,7 @@ void drawScreenFromImageBuffer(bool transparency) {
 	}
 }
 
+
 /**
  * Tallentaa näyttömuistin sisällön imageBufferiin.
  */
@@ -1325,5 +1345,38 @@ void saveScreenToImageBuffer() {
 
 	for (i = 0; i < ROWS * COLS * 2; i++) {
 		imageBuffer[i] = *(videomem++);
+	}
+}
+
+/**
+ * Kopioi imageBufferin sisällön screenChar- ja -colorBuffereihin.
+ */
+void copyImageBufferToScreenBuffer(bool transparency) {
+	int i, j, k;
+	char c;
+
+	// Jos merkki on 32 (eli välilyönti), ja transparency on true,
+	// merkkiä ei piirretä.
+	if (transparency) {
+		for (i = 0; i < ROWS * COLS * 2; i+=2) {
+			if (i % 2 == 0 && imageBuffer[i] == 32) {
+				i+=2;
+			}
+			else {
+				j = i / (COLS * 2);
+				k = (i % 160) / 2;
+				screenCharBuffer[j][k] = imageBuffer[i];
+				screenColorBuffer[j][k] = imageBuffer[i + 1];
+			}
+		}
+	}
+
+	else {
+		for (i = 0; i < ROWS * COLS * 2; i+=2) {
+			j = i / (COLS * 2);
+			k = (i % 160) / 2;
+			screenCharBuffer[j][k] = imageBuffer[i];
+			screenColorBuffer[j][k] = imageBuffer[i + 1];
+		}
 	}
 }

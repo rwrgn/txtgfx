@@ -1,5 +1,5 @@
-#ifndef TXTGFX_H
-#define TXTGFX_H
+#ifndef _TXTGFX_H
+#define _TXTGFX_H
 
 #include <string.h>
 #include <conio.h>
@@ -15,6 +15,11 @@
 
 #include <math.h>
 #include <time.h>
+
+// Palettifunktiot käyttävät luokkia, joten C++ vaaditaan
+#ifdef __cplusplus
+    #include "palettes.h"
+#endif
 
 // Näytön koko ja näytön päivityksen millisekuntitahdistus
 #define ROWS 25
@@ -43,8 +48,10 @@ void clrScr(void);
 
 void drawScreenFromBuffer(void);
 void drawScreenFromBlockBuffer(void);
+//void copyBlockBufferToScreenBuffer(bool transparency);
 
 void drawBlocksToBuffer(void);
+void drawTpBlocksToBuffer(char tpcolor);
 void printStringToBuffer(char* s, int x, int y);
 void printStringToScreen(char* s, char x, char y);
 void printColorStringToScreen(char* s, char x, char y, char color);
@@ -97,12 +104,7 @@ void defineChar(int cnum, char* fontData);
 void loadAnsiToImageBuffer(char* filename);
 void drawScreenFromImageBuffer(bool transparency);
 void saveScreenToImageBuffer(void);
-
-typedef struct rgbColor {
-	int r;
-	int g;
-	int b;
-};
+void copyImageBufferToScreenBuffer(bool transparency);
 
 // Näyttöbufferit:
 extern char screenCharBuffer[ROWS][COLS];
