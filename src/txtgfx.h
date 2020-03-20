@@ -48,7 +48,6 @@ void clrScr(void);
 
 void drawScreenFromBuffer(void);
 void drawScreenFromBlockBuffer(void);
-//void copyBlockBufferToScreenBuffer(bool transparency);
 
 void drawBlocksToBuffer(void);
 void drawTpBlocksToBuffer(char tpcolor);
@@ -78,7 +77,7 @@ void clrBlockColorBuffer(int color);
 void paintScreenColorBufferArea(int x, int y, int w, int h, int c);
 void paintScreenRow(int x, int y, int w, int c);
 
-// Grafiikkaprimitiivine piirto yms.
+// Grafiikkaprimitiivien piirto yms.
 void fillRect(int x, int y, int w, int h, int color);
 void fillRectToBlockBuffer(int x, int y, int w, int h, int color);
 void strokeRectToBlockBuffer(int x, int y, int w, int h, int color);
@@ -105,6 +104,8 @@ void loadAnsiToImageBuffer(char* filename);
 void drawScreenFromImageBuffer(bool transparency);
 void saveScreenToImageBuffer(void);
 void copyImageBufferToScreenBuffer(bool transparency);
+
+void clrImageBuffer(void);
 
 // Näyttöbufferit:
 extern char screenCharBuffer[ROWS][COLS];
