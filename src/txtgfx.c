@@ -1,7 +1,7 @@
 /**
  * txtgfx.c, txtgfx.h, palettes.h, palettes.cpp
  * 80x25 Text Mode graphics routines for DOS (32-bit protected mode)
- * v0.002b; February 2020
+ * v0.002b; March 2020
  * 
  * Mainly provides functionality to draw graphics primitives with
  * code page 437 block graphics (i.e. characters 219, 220 and 223),
@@ -48,7 +48,7 @@ void setColor(int colorNumber, int r, int g, int b) {
 	// Katso:
 	// http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
 
-	union REGS in, out;
+	union REGS regs;
 
 	// Huom.! Kirkkaat värit sijaitsevat jostain syystä välillä 56-63?!!
 	// Tämän vuoksi seuraava korjaus:
@@ -63,12 +63,12 @@ void setColor(int colorNumber, int r, int g, int b) {
 	}
 
 	// Huom.: Värit ovat rekistereissä muodossa GBR. Rekisteri on 1010h.
-	in.w.ax = 0x1010;
-	in.w.bx = colorNumber;
-	in.h.dh = r;
-	in.h.ch = g;
-	in.h.cl = b;
-	int386(0x10, &in, &out);
+	regs.w.ax = 0x1010;
+	regs.w.bx = colorNumber;
+	regs.h.dh = r;
+	regs.h.ch = g;
+	regs.h.cl = b;
+	int386(0x10, &regs, &regs);
 }
 
 /**
@@ -77,11 +77,7 @@ void setColor(int colorNumber, int r, int g, int b) {
  */
 void getColor(int colorNumber, int* r, int* g, int* b) {
 
-	char rstr[2];
-	char gstr[2];
-	char bstr[2];
-
-	union REGS in, out;
+	union REGS regs;
 
 	// Seiskaa suuremmat värit sijaitsevatkin loppupäässä.
 	if (colorNumber > 7 && colorNumber < 16) {
@@ -95,12 +91,12 @@ void getColor(int colorNumber, int* r, int* g, int* b) {
 
 	// Huom.1: Värit ovat rekistereissä muodossa GBR.
 	// Huom.2: Värien _LUKEMISEEN_ käytetään rekisteriä 1015h, keskeytystä 10h.
-	in.w.ax = 0x1015;
-	in.w.bx = colorNumber;
-	int386(0x10, &in, &out);
-	*r = out.h.dh;
-	*g = out.h.ch;
-	*b = out.h.cl;
+	regs.w.ax = 0x1015;
+	regs.w.bx = colorNumber;
+	int386(0x10, &regs, &regs);
+	*r = regs.h.dh;
+	*g = regs.h.ch;
+	*b = regs.h.cl;
 }
 
 /**
@@ -401,8 +397,7 @@ void printStringToBuffer(char* s, int x, int y) {
 
 	while (c != '\0') {
 		screenCharBuffer[y][(x + i < 80) ? x + i : x + i - COLS] = c;
-		i++;
-		c = s[i];
+		c = s[++i];
 	}
 }
 
@@ -421,8 +416,7 @@ void printStringToScreen(char* s, char x, char y) {
 	while (c != '\0') {
 		*(videomem++) = c;
 		videomem++;
-		i++;
-		c = s[i];
+		c = s[++i];
 	}
 }
 
@@ -1207,14 +1201,14 @@ void setBlinking(bool b) {
 
 	int a;
 
-	union REGS in, out;
+	union REGS regs;
 
 	if (b) { a = 0x01; }
 	else { a = 0x00; }
 
-	in.w.ax = 0x1003;
-	in.h.bl = a;
-	int386(0x10, &in, &out);
+	regs.w.ax = 0x1003;
+	regs.h.bl = a;
+	int386(0x10, &regs, &regs);
 }
 
 /**
@@ -1222,19 +1216,19 @@ void setBlinking(bool b) {
  * Katso: https://wiki.osdev.org/Text_Mode_Cursor
  */
 void showCursor(bool b) {
-	union REGS in, out;
+	union REGS regs;
 	
-	in.h.ah = 0x01;
+	regs.h.ah = 0x01;
 
 	if (b) {
-		in.h.ch = 14;
-		in.h.cl = 15;
-		int386(0x10, &in, &out);
+		regs.h.ch = 14;
+		regs.h.cl = 15;
+		int386(0x10, &regs, &regs);
 	}
 
 	else {
-		in.h.ch = 0x3f;
-		int386(0x10, &in, &out);
+		regs.h.ch = 0x3f;
+		int386(0x10, &regs, &regs);
 	}
 }
 
@@ -1283,7 +1277,6 @@ void loadAnsiToImageBuffer(char* filename) {
 	char c;
 	char* buf_p = imageBuffer;
 	char* buffer = 0;
-	//char test[10];
 	long length;
 	FILE* f = fopen(filename, "rb");
 
@@ -1360,11 +1353,12 @@ void copyImageBufferToScreenBuffer(bool transparency) {
 	if (transparency) {
 		for (i = 0; i < ROWS * COLS * 2; i+=2) {
 			if (i % 2 == 0 && imageBuffer[i] == 32) {
-				i+=2;
+				// Tässä oli ns. kaiken pilaava i+= 2 vanhastaan.
+				;
 			}
 			else {
 				j = i / (COLS * 2);
-				k = (i % 160) / 2;
+				k = ( i % (COLS * 2) ) / 2;
 				screenCharBuffer[j][k] = imageBuffer[i];
 				screenColorBuffer[j][k] = imageBuffer[i + 1];
 			}
@@ -1374,9 +1368,21 @@ void copyImageBufferToScreenBuffer(bool transparency) {
 	else {
 		for (i = 0; i < ROWS * COLS * 2; i+=2) {
 			j = i / (COLS * 2);
-			k = (i % 160) / 2;
+			k = ( i % (COLS * 2) ) / 2;
 			screenCharBuffer[j][k] = imageBuffer[i];
 			screenColorBuffer[j][k] = imageBuffer[i + 1];
 		}
+	}
+}
+
+/**
+ * Nollaa imageBufferin.
+ */
+void clrImageBuffer(void) {
+	int i;
+	char* p;
+	p = imageBuffer;
+	for (i = 0; i < 2 * ROWS * COLS; i++) {
+		*(p++) = 0;
 	}
 }
